@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>FontCraft</title>
+<style>
+:root{
+  --bg:#1c2733; --panel:#243241; --line:#3a4a5c; --ink:#e8eef4; --mute:#9fb0c1;
+  --accent:#f2b84b; --accent-ink:#2a1d00; --err:#ff8f86;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:15px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.app{display:grid;grid-template-columns:360px 1fr;height:100%}
+aside{background:var(--panel);border-right:1px solid var(--line);overflow:auto;padding:16px;display:flex;flex-direction:column;gap:14px}
+main{display:flex;flex-direction:column;min-width:0;min-height:0}
+h1{margin:0;font-size:20px;font-weight:700}
+h1 small{font-weight:400;color:var(--mute);font-size:13px;margin-left:8px}
+label{display:block;font-size:13px;color:var(--mute);margin-bottom:4px}
+input[type=text],input[type=search],input[type=number],select,textarea{
+  width:100%;background:var(--bg);color:var(--ink);border:1px solid var(--line);border-radius:6px;padding:9px 10px;font:inherit}
+textarea{min-height:84px;resize:vertical}
+input[type=range]{width:100%;accent-color:var(--accent)}
+input[type=color]{width:44px;height:36px;border:1px solid var(--line);border-radius:6px;background:var(--bg);padding:2px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.inline{display:flex;align-items:center;gap:8px}
+.val{float:right;color:var(--ink)}
+#list{border:1px solid var(--line);border-radius:6px;max-height:220px;overflow:auto;background:var(--bg)}
+#list button{display:flex;justify-content:space-between;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--line);color:var(--ink);padding:10px;font:inherit;cursor:pointer}
+#list button:last-child{border-bottom:0}
+#list button small{color:var(--mute)}
+#list button.on{background:var(--accent);color:var(--accent-ink)}
+#list button.on small{color:var(--accent-ink)}
+#count{font-size:12px;color:var(--mute);margin-top:4px}
+.btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:11px 14px;font:inherit;font-weight:600;cursor:pointer}
+.btn.alt{background:none;color:var(--ink);border:1px solid var(--line)}
+.btns{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.file{display:block;text-align:center;border:1px dashed var(--line);border-radius:6px;padding:10px;color:var(--mute);cursor:pointer}
+.file input{display:none}
+#status{padding:8px 16px;font-size:13px;color:var(--mute);border-bottom:1px solid var(--line);min-height:36px}
+#status.err{color:var(--err)}
+#stage{flex:1;overflow:auto;padding:24px;display:flex;align-items:flex-start;justify-content:center;min-height:0}
+#preview{display:inline-block;max-width:100%;
+  background-image:linear-gradient(45deg,#2c3a4a 25%,transparent 25%,transparent 75%,#2c3a4a 75%),linear-gradient(45deg,#2c3a4a 25%,transparent 25%,transparent 75%,#2c3a4a 75%);
+  background-size:20px 20px;background-position:0 0,10px 10px;border:1px solid var(--line)}
+#preview svg{display:block;max-width:100%;height:auto}
+@media (max-width:820px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto 1fr;height:auto;min-height:100%}
+  aside{border-right:0;border-bottom:1px solid var(--line);overflow:visible}
+  #stage{min-height:300px}
+}
+</style>
+</head>
+<body>
+<div class="app">
+<aside>
+  <h1>FontCraft<small>texto con tu fuente</small></h1>
+
+  <div>
+    <label for="txt">Texto</label>
+    <textarea id="txt">Tipografía</textarea>
+  </div>
+
+  <div>
+    <label for="q">Buscar fuente de Google Fonts</label>
+    <input type="search" id="q" placeholder="Roboto, Lobster, Cinzel…" autocomplete="off">
+    <div style="height:8px"></div>
+    <select id="cat" aria-label="Categoría">
+      <option value="local" selected>Incluidas (sin internet)</option>
+      <option value="">Todas (necesita internet)</option>
+      <option value="sans-serif">Sans serif</option>
+      <option value="serif">Serif</option>
+      <option value="display">Display</option>
+      <option value="handwriting">Manuscrita</option>
+      <option value="monospace">Monoespaciada</option>
+    </select>
+    <div style="height:8px"></div>
+    <div id="list" role="listbox" aria-label="Fuentes"></div>
+    <div id="count"></div>
+  </div>
+
+  <label class="file">Cargar mi propia fuente (.ttf, .otf, .woff)
+    <input type="file" id="own" accept=".ttf,.otf,.woff">
+  </label>
+
+  <div class="row">
+    <div><label for="wt">Grosor</label><select id="wt"></select></div>
+    <div><label>&nbsp;</label><div class="inline" style="height:38px"><input type="checkbox" id="it"><label for="it" style="margin:0">Cursiva</label></div></div>
+  </div>
+
+  <div><label for="size">Tamaño <span class="val" id="sizeV"></span></label>
+    <input type="range" id="size" min="12" max="600" value="140"></div>
+  <div><label for="sp">Espaciado entre letras <span class="val" id="spV"></span></label>
+    <input type="range" id="sp" min="-10" max="40" value="0"></div>
+  <div><label for="lh">Interlineado <span class="val" id="lhV"></span></label>
+    <input type="range" id="lh" min="70" max="220" value="120"></div>
+
+  <div class="row">
+    <div><label for="al">Alineación</label>
+      <select id="al"><option value="left">Izquierda</option><option value="center">Centro</option><option value="right">Derecha</option></select></div>
+    <div><label for="pad">Margen (px)</label><input type="number" id="pad" value="24" min="0" max="500"></div>
+  </div>
+
+  <div class="row">
+    <div><label for="col">Color del texto</label><input type="color" id="col" value="#ffffff"></div>
+    <div><label for="bg">Fondo</label>
+      <div class="inline"><input type="color" id="bg" value="#ffffff"><input type="checkbox" id="tr" checked><label for="tr" style="margin:0">Transparente</label></div></div>
+  </div>
+
+  <div class="row">
+    <div><label for="sc">Calidad PNG</label>
+      <select id="sc"><option value="1">1×</option><option value="2" selected>2×</option><option value="4">4×</option></select></div>
+    <div></div>
+  </div>
+
+  <div class="btns">
+    <button class="btn" id="dlSvg">Exportar SVG</button>
+    <button class="btn alt" id="dlPng">Exportar PNG</button>
+  </div>
+</aside>
+
+<main>
+  <div id="status">Cargando lista de fuentes…</div>
+  <div id="stage"><div id="preview"></div></div>
+</main>
+</div>
+
+<script src="opentype.min.js"></script>
+<script>
+(function(){
+'use strict';
+var FS='https://cdn.jsdelivr.net/fontsource/fonts/';
+var LOCAL=[{"id":"roboto","family":"Roboto","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"open-sans","family":"Open Sans","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"lato","family":"Lato","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"montserrat","family":"Montserrat","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"poppins","family":"Poppins","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"inter","family":"Inter","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"playfair-display","family":"Playfair Display","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"merriweather","family":"Merriweather","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"lora","family":"Lora","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"oswald","family":"Oswald","category":"sans-serif","files":["400-normal","700-normal"]},{"id":"bebas-neue","family":"Bebas Neue","category":"sans-serif","files":["400-normal"]},{"id":"anton","family":"Anton","category":"sans-serif","files":["400-normal"]},{"id":"lobster","family":"Lobster","category":"display","files":["400-normal"]},{"id":"pacifico","family":"Pacifico","category":"display","files":["400-normal"]},{"id":"dancing-script","family":"Dancing Script","category":"handwriting","files":["400-normal","700-normal"]},{"id":"cinzel","family":"Cinzel","category":"serif","files":["400-normal","700-normal"]},{"id":"raleway","family":"Raleway","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"nunito","family":"Nunito","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"work-sans","family":"Work Sans","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"josefin-sans","family":"Josefin Sans","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"dm-serif-display","family":"DM Serif Display","category":"serif","files":["400-italic","400-normal"]},{"id":"great-vibes","family":"Great Vibes","category":"handwriting","files":["400-normal"]},{"id":"cormorant-garamond","family":"Cormorant Garamond","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"libre-baskerville","family":"Libre Baskerville","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"abril-fatface","family":"Abril Fatface","category":"display","files":["400-normal"]},{"id":"caveat","family":"Caveat","category":"handwriting","files":["400-normal","700-normal"]},{"id":"source-sans-3","family":"Source Sans 3","category":"sans-serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"pt-serif","family":"PT Serif","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"eb-garamond","family":"EB Garamond","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"crimson-text","family":"Crimson Text","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"sacramento","family":"Sacramento","category":"handwriting","files":["400-normal"]},{"id":"satisfy","family":"Satisfy","category":"handwriting","files":["400-normal"]},{"id":"permanent-marker","family":"Permanent Marker","category":"display","files":["400-normal"]},{"id":"amatic-sc","family":"Amatic Sc","category":"display","files":["400-normal","700-normal"]},{"id":"quicksand","family":"Quicksand","category":"sans-serif","files":["400-normal","700-normal"]},{"id":"spectral","family":"Spectral","category":"serif","files":["400-italic","400-normal","700-italic","700-normal"]},{"id":"cinzel-decorative","family":"Cinzel Decorative","category":"serif","files":["400-normal","700-normal"]},{"id":"allura","family":"Allura","category":"handwriting","files":["400-normal"]},{"id":"parisienne","family":"Parisienne","category":"handwriting","files":["400-normal"]},{"id":"alex-brush","family":"Alex Brush","category":"handwriting","files":["400-normal"]}].map(function(f){var w=[],it=false;f.files.forEach(function(k){var p=k.split('-');if(w.indexOf(+p[0])<0)w.push(+p[0]);if(p[1]==='italic')it=true});return {id:f.id,family:f.family,category:f.category,weights:w.sort(),styles:it?['normal','italic']:['normal'],local:true,files:f.files}});
+var seq=0, fonts=[], sel=null, current=null, lastSvg='', lastW=0, lastH=0, cache={};
+var $=function(id){return document.getElementById(id)};
+
+function status(msg,err){var s=$('status');s.textContent=msg;s.className=err?'err':''}
+
+function title(id){return id.split('-').map(function(w){return w.charAt(0).toUpperCase()+w.slice(1)}).join(' ')}
+
+function merge(a){
+  var have={};fonts.forEach(function(f){have[f.id]=1});
+  a.forEach(function(f){if(!have[f.id])fonts.push(f)});
+  renderList();
+}
+
+function loadList(){
+  fonts=LOCAL.slice();
+  renderList();
+  pick(LOCAL.filter(function(f){return f.id==='montserrat'})[0]||LOCAL[0]);
+  try{var c=JSON.parse(localStorage.getItem('fontcraft-list')||'null');if(c)merge(c)}catch(e){}
+  fetch('https://api.fontsource.org/v1/fonts').then(function(r){if(!r.ok)throw new Error(r.status);return r.json()})
+  .then(function(a){
+    var online=a.filter(function(f){return f.type==='google'&&(!f.subsets||f.subsets.indexOf('latin')>-1)})
+      .map(function(f){return {id:f.id,family:f.family,category:f.category,weights:f.weights||[400],styles:f.styles||['normal']}});
+    try{localStorage.setItem('fontcraft-list',JSON.stringify(online))}catch(e){}
+    merge(online);
+  }).catch(function(){});
+}
+
+function renderList(){
+  var q=$('q').value.trim().toLowerCase(), cat=$('cat').value, box=$('list'), n=0, total=0;
+  box.innerHTML='';
+  fonts.forEach(function(f){
+    if(q&&f.family.toLowerCase().indexOf(q)<0)return;
+    if(cat==='local'&&!f.local)return;
+    if(cat&&cat!=='local'&&f.category!==cat)return;
+    total++;
+    if(n>=80)return;
+    n++;
+    var b=document.createElement('button');
+    b.type='button';b.setAttribute('role','option');
+    if(sel&&sel.id===f.id)b.className='on';
+    b.innerHTML='<span></span><small></small>';
+    b.firstChild.textContent=f.family;
+    b.lastChild.textContent=f.category||'';
+    b.onclick=function(){pick(f)};
+    box.appendChild(b);
+  });
+  $('count').textContent=total+' fuentes'+(total>80?' (muestro 80, escribe para filtrar)':'');
+}
+
+function pick(f){
+  sel=f;
+  var w=$('wt'), keep=+w.value;
+  w.innerHTML='';
+  f.weights.forEach(function(x){var o=document.createElement('option');o.value=x;o.textContent=x;w.appendChild(o)});
+  w.value=f.weights.indexOf(keep)>-1?keep:(f.weights.indexOf(400)>-1?400:f.weights[0]);
+  var hasIt=f.styles.indexOf('italic')>-1;
+  $('it').disabled=!hasIt; if(!hasIt)$('it').checked=false;
+  renderList();
+  loadFont();
+}
+
+function getBuf(url){
+  if(cache[url])return Promise.resolve(cache[url]);
+  return fetch(url).then(function(r){if(!r.ok)throw new Error(r.status);return r.arrayBuffer()}).then(function(b){cache[url]=b;return b});
+}
+
+function urlFor(w,st){
+  if(sel.local){var k=w+'-'+st;return sel.files.indexOf(k)>-1?'fonts/'+sel.id+'/'+k+'.woff':null}
+  return FS+sel.id+'@latest/latin-'+w+'-'+st+'.woff';
+}
+
+function loadFont(){
+  if(!sel)return;
+  var my=++seq, w=+$('wt').value, st=$('it').checked?'italic':'normal';
+  status('Cargando '+sel.family+'…');
+  var tries=[[w,st],[w,'normal'],[400,'normal']].map(function(t){return {w:t[0],st:t[1],u:urlFor(t[0],t[1])}}).filter(function(t){return t.u});
+  var chain=Promise.reject();
+  tries.forEach(function(t){chain=chain.catch(function(){return getBuf(t.u).then(function(b){t.ok=true;return b})})});
+  chain.then(function(buf){
+    if(my!==seq)return;
+    var t=tries.filter(function(t){return t.ok})[0];
+    if(t){if(sel.weights.indexOf(t.w)>-1)$('wt').value=t.w;$('it').checked=(t.st==='italic')}
+    current={font:opentype.parse(buf.slice(0)),label:sel.family};
+    status(sel.family+' · '+$('wt').value+($('it').checked?' cursiva':'')+(sel.local?'':' (en línea)'));
+    render();
+  }).catch(function(){if(my===seq)status('No se pudo descargar '+sel.family+'. Revisa tu conexión o elige una fuente de "Incluidas".',true)});
+}
+
+function render(){
+  if(!current)return;
+  var f=current.font, size=+$('size').value, sc=size/f.unitsPerEm;
+  var ls=(+$('sp').value/100)*size, step=size*(+$('lh').value/100), pad=+$('pad').value||0;
+  $('sizeV').textContent=size+' px';$('spV').textContent=$('sp').value+'%';$('lhV').textContent=$('lh').value+'%';
+  var lines=$('txt').value.split('\n'), data=[], maxW=0;
+  lines.forEach(function(line,li){
+    var gl=Array.from(line).map(function(c){return f.charToGlyph(c)}), x=0;
+    gl.forEach(function(g,i){
+      var adv=(g.advanceWidth||0)*sc;
+      if(i<gl.length-1){adv+=f.getKerningValue(g,gl[i+1])*sc+ls}
+      data.push({g:g,x:x,l:li});
+      x+=adv;
+    });
+    data.push({w:x,l:li,end:true});
+    if(x>maxW)maxW=x;
+  });
+  var asc=f.ascender*sc, desc=-f.descender*sc;
+  var W=Math.max(maxW+pad*2,10), H=pad*2+asc+desc+(lines.length-1)*step;
+  var widths={};data.forEach(function(d){if(d.end)widths[d.l]=d.w});
+  var al=$('al').value, d='';
+  data.forEach(function(it){
+    if(it.end)return;
+    var off=al==='center'?(maxW-widths[it.l])/2:(al==='right'?maxW-widths[it.l]:0);
+    var y=pad+asc+it.l*step;
+    d+=it.g.getPath(pad+off+it.x,y,size).toPathData(2)+' ';
+  });
+  var bg=$('tr').checked?'':'<rect width="100%" height="100%" fill="'+$('bg').value+'"/>';
+  W=Math.round(W*100)/100;H=Math.round(H*100)/100;
+  lastW=W;lastH=H;
+  lastSvg='<svg xmlns="http://www.w3.org/2000/svg" width="'+W+'" height="'+H+'" viewBox="0 0 '+W+' '+H+'">'+bg+'<path fill="'+$('col').value+'" d="'+d.trim()+'"/></svg>';
+  $('preview').innerHTML=lastSvg;
+}
+
+function save(blob,name){
+  var a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;
+  document.body.appendChild(a);a.click();a.remove();
+  setTimeout(function(){URL.revokeObjectURL(a.href)},4000);
+}
+function fname(ext){return 'texto-'+(current?current.label.toLowerCase().replace(/[^a-z0-9]+/g,'-'):'fontcraft')+'.'+ext}
+
+$('dlSvg').onclick=function(){
+  if(!lastSvg){status('Aún no hay texto para exportar.',true);return}
+  save(new Blob([lastSvg],{type:'image/svg+xml'}),fname('svg'));
+};
+$('dlPng').onclick=function(){
+  if(!lastSvg){status('Aún no hay texto para exportar.',true);return}
+  var s=Math.min(+$('sc').value,8192/Math.max(lastW,lastH));
+  var img=new Image(), url=URL.createObjectURL(new Blob([lastSvg],{type:'image/svg+xml'}));
+  img.onload=function(){
+    var c=document.createElement('canvas');c.width=Math.max(1,Math.round(lastW*s));c.height=Math.max(1,Math.round(lastH*s));
+    c.getContext('2d').drawImage(img,0,0,c.width,c.height);
+    URL.revokeObjectURL(url);
+    c.toBlob(function(b){if(b)save(b,fname('png'));else status('No se pudo crear el PNG.',true)},'image/png');
+  };
+  img.onerror=function(){status('No se pudo crear el PNG.',true)};
+  img.src=url;
+};
+
+$('own').onchange=function(e){
+  var file=e.target.files[0];if(!file)return;
+  var r=new FileReader();
+  r.onload=function(){
+    try{
+      var font=opentype.parse(r.result);
+      current={font:font,label:file.name.replace(/\.[^.]+$/,'')};
+      status('Fuente propia: '+file.name);
+      render();
+    }catch(err){status('No pude leer ese archivo. Usa .ttf, .otf o .woff (no .woff2).',true)}
+  };
+  r.readAsArrayBuffer(file);
+};
+
+['txt','size','sp','lh','al','pad','col','bg','tr'].forEach(function(id){
+  $(id).addEventListener('input',render);$(id).addEventListener('change',render);
+});
+$('wt').onchange=loadFont;$('it').onchange=loadFont;
+$('q').oninput=renderList;$('cat').onchange=renderList;
+
+loadList();
+})();
+</script>
+<script src="../launcher.js"></script></body>
+</html>
