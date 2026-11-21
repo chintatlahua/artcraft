@@ -11,6 +11,7 @@
     ['SoundCraft','soundcraft-web-0.20.1','soundcraft'],['CADCraft','cadcraft-web-0.20.1','cadcraft'],
     ['MaterialCraft','materialcraft-web-0.4.1','materialcraft'],['TextureCraft','texturecraft-web-0.6.1','texturecraft'],
     ['Craft Anything','craft-anything-web-0.6.1','craft-anything']];
+  const STANDALONE = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
   const here = APPS.find(a => location.pathname.includes('/' + a[1] + '/'));
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647';
@@ -37,11 +38,11 @@
   </style>
   <button id="b" aria-label="Abrir otra app" title="Abrir otra app"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="4" r="2"/><circle cx="10" cy="4" r="2"/><circle cx="16" cy="4" r="2"/><circle cx="4" cy="10" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><circle cx="4" cy="16" r="2"/><circle cx="10" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg></button>
   <div id="o" hidden><div id="p" role="dialog" aria-label="Apps de ArtCraft"><h2>ABRIR OTRA APP (SE ABRE EN PESTAÑA NUEVA)</h2>
-  <a class="home" href="../" target="_blank" rel="noopener">⌂ Inicio de ArtCraft OS</a><div class="g"></div></div></div>`;
+  <a class="home" href="../" rel="noopener">⌂ Inicio de ArtCraft OS</a><div class="g"></div></div></div>`;
   const grid = root.querySelector('.g');
   for (const [name, dir, ico] of APPS) {
     const a = document.createElement('a');
-    a.href = '../' + dir + '/'; a.target = '_blank'; a.rel = 'noopener';
+    a.href = '../' + dir + '/'; a.target = STANDALONE ? '_self' : '_blank'; a.rel = 'noopener';
     if (here && here[1] === dir) a.className = 'cur';
     const img = document.createElement('img');
     img.alt = ''; img.src = 'https://getartcraft.com/images/apps/' + ico + '/icon.webp';

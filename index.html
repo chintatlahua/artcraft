@@ -4,6 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>ArtCraft OS · Rafael</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#0e1118">
+<link rel="apple-touch-icon" href="icon-192.png">
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=JetBrains+Mono:wght@400;600&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#0e1118;--bg2:#131822;--border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
@@ -70,6 +73,8 @@ const GROUPS=[
   ['MaterialCraft','Materiales procedurales por nodos.','materialcraft-web-0.4.1','materialcraft'],
   ['TextureCraft','Pintura de texturas 3D.','texturecraft-web-0.6.1','texturecraft'],
   ['Craft Anything','Explora cómo funciona el software y crea el tuyo.','craft-anything-web-0.6.1','craft-anything']]]];
+const STANDALONE=matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
+if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js').catch(()=>{});
 const out=document.getElementById('out'),q=document.getElementById('q'),empty=document.getElementById('empty');
 function render(f){f=(f||'').trim().toLowerCase();let n=0;out.innerHTML='';
  for(const [title,color,apps] of GROUPS){
@@ -77,7 +82,7 @@ function render(f){f=(f||'').trim().toLowerCase();let n=0;out.innerHTML='';
   const h=document.createElement('div');h.className='group';h.textContent=title.toUpperCase();out.appendChild(h);
   const g=document.createElement('div');g.className='grid';
   for(const [name,desc,dir,ico] of list){
-   const a=document.createElement('a');a.className='card';a.href=dir+'/';a.target='_blank';a.rel='noopener';a.style.setProperty('--c',color);
+   const a=document.createElement('a');a.className='card';a.href=dir+'/';a.target=STANDALONE?'_self':'_blank';a.rel='noopener';a.style.setProperty('--c',color);
    const img=document.createElement('img');img.className='icon';img.alt='';img.loading='lazy';img.src='https://getartcraft.com/images/apps/'+ico+'/icon.webp';
    img.onerror=()=>{const d=document.createElement('div');d.className='icon';d.textContent=name[0];img.replaceWith(d)};
    const t=document.createElement('div');t.className='txt';
