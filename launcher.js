@@ -13,6 +13,33 @@
     ['Craft Anything','craft-anything-web-0.6.1','craft-anything']];
   const STANDALONE = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches;
   const here = APPS.find(a => location.pathname.includes('/' + a[1] + '/'));
+
+  /* ---- pantalla completa ---- */
+  const KEY_AUTO = 'craftnav.autofs';
+  const de = document.documentElement;
+  const FS_OK = !!(de.requestFullscreen || de.webkitRequestFullscreen);
+  const isFS = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+  const enterFS = () => { const f = de.requestFullscreen || de.webkitRequestFullscreen; if (f) { try { const r = f.call(de); if (r && r.catch) r.catch(() => {}); } catch (e) {} } };
+  const exitFS = () => { const f = document.exitFullscreen || document.webkitExitFullscreen; if (f) { try { const r = f.call(document); if (r && r.catch) r.catch(() => {}); } catch (e) {} } };
+  let auto = true; try { auto = localStorage.getItem(KEY_AUTO) !== '0'; } catch (e) {}
+  let userExited = false, wasFS = false;
+
+  /* ---- color de la barra del navegador (theme-color) ---- */
+  const setTheme = () => {
+    let c = '';
+    for (const el of [document.body, document.documentElement]) {
+      if (!el) continue;
+      const v = getComputedStyle(el).backgroundColor;
+      if (v && v !== 'transparent' && !/rgba\(.*,\s*0\)$/.test(v)) { c = v; break; }
+    }
+    c = c || '#0e1118';
+    let m = document.querySelector('meta[name="theme-color"]');
+    if (!m) { m = document.createElement('meta'); m.name = 'theme-color'; document.head.appendChild(m); }
+    m.content = c;
+  };
+  const themeSoon = () => { setTheme(); setTimeout(setTheme, 2000); };
+  if (document.readyState === 'complete') themeSoon(); else addEventListener('load', themeSoon);
+
   const host = document.createElement('div');
   host.style.cssText = 'position:fixed;left:0;top:0;width:0;height:0;z-index:2147483647';
   const root = host.attachShadow({mode:'open'});
@@ -35,9 +62,15 @@
    img,.f{width:48px;height:48px;border-radius:12px;object-fit:cover}
    .f{display:flex;align-items:center;justify-content:center;background:#0e1118;color:#00e5a0;font-weight:700}
    .home{flex-direction:row;justify-content:center;margin-bottom:10px;width:100%;color:#00e5a0}
+   .fs{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-bottom:12px}
+   .fs[hidden]{display:none}
+   .fs button{padding:10px 14px;border-radius:10px;background:#131822;border:1px solid rgba(255,255,255,.14);color:#d8e4f0;font-size:13px;cursor:pointer}
+   .fs button:hover,.fs button:focus-visible{border-color:#00e5a0;outline:none}
+   .fs label{display:flex;align-items:center;gap:8px;color:#9fb0c1;font-size:13px}
   </style>
   <button id="b" aria-label="Abrir otra app" title="Abrir otra app"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="4" r="2"/><circle cx="10" cy="4" r="2"/><circle cx="16" cy="4" r="2"/><circle cx="4" cy="10" r="2"/><circle cx="10" cy="10" r="2"/><circle cx="16" cy="10" r="2"/><circle cx="4" cy="16" r="2"/><circle cx="10" cy="16" r="2"/><circle cx="16" cy="16" r="2"/></svg></button>
   <div id="o" hidden><div id="p" role="dialog" aria-label="Apps de ArtCraft"><h2>ABRIR OTRA APP (SE ABRE EN PESTAÑA NUEVA)</h2>
+  <div class="fs" id="fsrow"><button id="fsb" type="button"></button><label><input type="checkbox" id="fsa"> Pantalla completa automática al primer toque</label></div>
   <a class="home" href="../" rel="noopener">⌂ Inicio de ArtCraft OS</a><div class="g"></div></div></div>`;
   const grid = root.querySelector('.g');
   for (const [name, dir, ico] of APPS) {
@@ -51,6 +84,20 @@
     a.append(img, s); grid.appendChild(a);
   }
   const b = root.getElementById('b'), o = root.getElementById('o');
+
+  /* controles de pantalla completa en el panel */
+  const fsb = root.getElementById('fsb'), fsa = root.getElementById('fsa'), fsrow = root.getElementById('fsrow');
+  fsrow.hidden = !FS_OK;
+  const updFS = () => { fsb.textContent = isFS() ? 'Salir de pantalla completa' : 'Pantalla completa'; };
+  fsa.checked = auto; updFS();
+  fsb.addEventListener('click', () => { if (isFS()) exitFS(); else { userExited = false; enterFS(); } o.hidden = true; });
+  fsa.addEventListener('change', () => { auto = fsa.checked; try { localStorage.setItem(KEY_AUTO, auto ? '1' : '0'); } catch (e) {} });
+  const onFS = () => { const now = isFS(); if (wasFS && !now) userExited = true; if (now) userExited = false; wasFS = now; updFS(); };
+  document.addEventListener('fullscreenchange', onFS); document.addEventListener('webkitfullscreenchange', onFS);
+  /* el primer toque dentro de la app activa la pantalla completa (el navegador exige un gesto) */
+  const autoFS = () => { if (!auto || userExited || isFS() || !FS_OK || STANDALONE) return; enterFS(); };
+  addEventListener('pointerup', autoFS, true); addEventListener('click', autoFS, true);
+
   const clamp = (v, max) => Math.max(4, Math.min(max - 48, v));
   let pos; try { pos = JSON.parse(localStorage.getItem('craftnav.pos.' + (here ? here[1] : 'x'))); } catch (e) {}
   pos = pos || {x: innerWidth - 56, y: innerHeight - 56};
