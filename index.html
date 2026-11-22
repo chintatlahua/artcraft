@@ -84,7 +84,7 @@ function render(f){f=(f||'').trim().toLowerCase();let n=0;out.innerHTML='';
   const h=document.createElement('div');h.className='group';h.textContent=title.toUpperCase();out.appendChild(h);
   const g=document.createElement('div');g.className='grid';
   for(const [name,desc,dir,ico] of list){
-   const a=document.createElement('a');a.className='card';a.href=dir+'/';a.target=STANDALONE?'_self':'_blank';a.rel='noopener';a.style.setProperty('--c',color);
+   const a=document.createElement('a');a.className='card';a.href=dir+'/';a.target='_blank';a.rel='noopener';a.style.setProperty('--c',color);
    const img=document.createElement('img');img.className='icon';img.alt='';img.loading='lazy';img.src='https://getartcraft.com/images/apps/'+ico+'/icon.webp';
    img.onerror=()=>{const d=document.createElement('div');d.className='icon';d.textContent=name[0];img.replaceWith(d)};
    const t=document.createElement('div');t.className='txt';

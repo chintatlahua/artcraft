@@ -42,7 +42,7 @@
   const grid = root.querySelector('.g');
   for (const [name, dir, ico] of APPS) {
     const a = document.createElement('a');
-    a.href = '../' + dir + '/'; a.target = STANDALONE ? '_self' : '_blank'; a.rel = 'noopener';
+    a.href = '../' + dir + '/'; a.target = '_blank'; a.rel = 'noopener';
     if (here && here[1] === dir) a.className = 'cur';
     const img = document.createElement('img');
     img.alt = ''; img.src = 'https://getartcraft.com/images/apps/' + ico + '/icon.webp';

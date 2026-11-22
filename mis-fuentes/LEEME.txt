@@ -1,0 +1,8 @@
+Carpeta de fuentes propias para FontCraft.
+
+1. Copia aquí tus fuentes (.ttf, .otf o .woff; no .woff2).
+2. En Terminal, dentro del repositorio, ejecuta:  sh mis-fuentes/actualizar.sh
+3. Haz commit y push en GitHub Desktop.
+
+Las fuentes aparecen solas en FontCraft, en "Mis fuentes", en cualquier dispositivo.
+Respeta las licencias: el repositorio es público si tu GitHub Pages lo es.
