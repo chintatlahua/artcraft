@@ -3,11 +3,11 @@
 (function(){
   if (window.__craftNav) return; window.__craftNav = 1;
   const APPS = [ // [nombre, carpeta, ícono]
-    ['PhotoCraft','photocraft-web-0.23.1','photocraft'],['FontCraft','fontcraft-web-0.1.0','fontcraft'],['DesignCraft','designcraft-web-0.20.1','designcraft'],['VectorCraft','vectorcraft-web-0.24.1','vectorcraft'],
+    ['PhotoCraft','photocraft-web-0.23.1','photocraft'],['FontCraft','fontcraft-web-0.1.0','fontcraft'],['DesignCraft','designcraft-web-0.21.1','designcraft'],['VectorCraft','vectorcraft-web-0.24.1','vectorcraft'],
     ['FigCraft','figcraft-web-0.18.1','figcraft'],['LightCraft','lightcraft-web-0.21.1','lightcraft'],
-    ['WordCraft','wordcraft-web-0.18.1','wordcraft'],['GridCraft','gridcraft-web-0.19.1','gridcraft'],
-    ['DeckCraft','deckcraft-web-0.18.1','deckcraft'],['PdfCraft','pdfcraft-web-0.21.1','pdfcraft'],
-    ['FilmCraft','filmcraft-web-0.20.1','filmcraft'],['EffectCraft','effectcraft-web-0.24.1','effectcraft'],
+    ['WordCraft','wordcraft-web-0.19.1','wordcraft'],['GridCraft','gridcraft-web-0.19.1','gridcraft'],
+    ['DeckCraft','deckcraft-web-0.19.1','deckcraft'],['PdfCraft','pdfcraft-web-0.22.0','pdfcraft'],
+    ['FilmCraft','filmcraft-web-0.20.1','filmcraft'],['EffectCraft','effectcraft-web-0.25.1','effectcraft'],
     ['SoundCraft','soundcraft-web-0.20.1','soundcraft'],['CADCraft','cadcraft-web-0.20.1','cadcraft'],
     ['MaterialCraft','materialcraft-web-0.4.1','materialcraft'],['TextureCraft','texturecraft-web-0.6.1','texturecraft'],
     ['Craft Anything','craft-anything-web-0.6.1','craft-anything']];

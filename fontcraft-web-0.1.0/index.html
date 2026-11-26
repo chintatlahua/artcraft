@@ -45,6 +45,7 @@ input[type=color]{width:44px;height:36px;border:1px solid var(--line);border-rad
 .btn{background:var(--accent);color:var(--accent-ink);border:0;border-radius:6px;padding:10px 12px;font:inherit;font-weight:600;cursor:pointer}
 .btn.alt{background:none;color:var(--ink);border:1px solid var(--line);font-weight:500}
 .btn.sm{padding:8px 6px;font-size:13px}
+.btn:disabled{opacity:.4;cursor:default}
 .btns{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .btns3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .file{display:block;text-align:center;border:1px dashed var(--line);border-radius:6px;padding:9px;color:var(--mute);cursor:pointer;font-size:13px}
@@ -79,6 +80,7 @@ input[type=color]{width:44px;height:36px;border:1px solid var(--line);border-rad
   <h1>FontCraft<small>composición tipográfica</small></h1>
 
   <details open><summary>Capas</summary><div class="body">
+    <div class="btns"><button class="btn alt sm" id="undo" type="button" disabled>↶ Deshacer</button><button class="btn alt sm" id="redo" type="button" disabled>↷ Rehacer</button></div>
     <div class="btns3">
       <button class="btn sm" id="addL" type="button">+ Capa</button>
       <button class="btn alt sm" id="dupL" type="button">Duplicar</button>
@@ -89,7 +91,7 @@ input[type=color]{width:44px;height:36px;border:1px solid var(--line);border-rad
       <button class="btn alt sm" id="upL" type="button">↑ Subir capa</button>
       <button class="btn alt sm" id="downL" type="button">↓ Bajar capa</button>
     </div>
-    <div class="hint">Arrastra el texto en el lienzo para moverlo. La capa de arriba de la lista queda al frente.</div>
+    <div class="hint">Arrastra el texto en el lienzo para moverlo los nodos cuadrados del recuadro para cambiar el tamaño de la letra y el nodo redondo de arriba para girarla. Al mover, verás guías azules que se pegan al centro, a los bordes del lienzo y a otras capas. La capa de arriba de la lista queda al frente.</div>
   </div></details>
 
   <details open><summary>Texto</summary><div class="body">
@@ -166,8 +168,9 @@ input[type=color]{width:44px;height:36px;border:1px solid var(--line);border-rad
     <div class="btns">
       <button class="btn" id="dlSvg" type="button">Exportar SVG</button>
       <button class="btn alt" id="dlPng" type="button">Exportar PNG</button>
+      <button class="btn alt" id="dlPdf" type="button" style="grid-column:1/-1">Exportar PDF (para Affinity)</button>
     </div>
-    <div class="hint">El SVG trae una capa por texto (capa-1, capa-2…) para editarlas en VectorCraft o DesignCraft.</div>
+    <div class="hint">El SVG trae una capa por texto (capa-1, capa-2…) para editarlas en VectorCraft o DesignCraft. Para Affinity, abre el PDF con Archivo → Abrir: cada texto llega como curvas vectoriales editables (el SVG también lo abre).</div>
   </div></details>
 </aside>
 
@@ -303,6 +306,7 @@ function geomOf(L,font){
     r.items.forEach(function(it){d+=it.g.getPath(off+it.x,y,size).toPathData(2)+' '});
   });
   var g={d:d.trim(),w:w,h:h};
+  if(Object.keys(geomCache).length>300)geomCache={};
   geomCache[key]=g;
   return g;
 }
@@ -330,8 +334,28 @@ function overlayMarkup(){
     out+='<rect data-hit="'+L.id+'" width="'+r2(g.w)+'" height="'+r2(g.h)+'" transform="'+tf(L,g)+'" fill="'+(on?'rgba(242,184,75,.08)':'transparent')+'"'+
       (on?' stroke="#f2b84b" stroke-width="2" stroke-dasharray="7 5" vector-effect="non-scaling-stroke"':'')+' style="cursor:move"/>';
   });
+  var SL=sel(), sf=SL&&SL.visible&&fontFor(SL);
+  if(sf){
+    var sg=geomOf(SL,sf), kz=(svg.getBoundingClientRect().width/doc.w)||1, hr=7/kz, ht=22/kz;
+    out+='<g data-hg="1" transform="'+tf(SL,sg)+'">';
+    HANDLES.forEach(function(h){
+      var hx=r2(h[1]*sg.w), hy=r2(h[2]*sg.h);
+      out+='<g data-h="'+h[0]+'" style="cursor:'+h[3]+'"><circle cx="'+hx+'" cy="'+hy+'" r="'+r2(ht)+'" fill="transparent"/>'+
+        '<rect x="'+r2(hx-hr)+'" y="'+r2(hy-hr)+'" width="'+r2(hr*2)+'" height="'+r2(hr*2)+'" rx="'+r2(hr*0.25)+'" fill="#f2b84b" stroke="#1b1b1b" stroke-width="1.5" vector-effect="non-scaling-stroke"/></g>';
+    });
+    var rz=44/kz, mx=r2(sg.w/2);
+    out+='<line x1="'+mx+'" y1="0" x2="'+mx+'" y2="'+r2(-rz)+'" stroke="#f2b84b" stroke-width="1.5" vector-effect="non-scaling-stroke"/>'+
+      '<g data-h="rot" style="cursor:grab"><circle cx="'+mx+'" cy="'+r2(-rz)+'" r="'+r2(ht)+'" fill="transparent"/>'+
+      '<circle cx="'+mx+'" cy="'+r2(-rz)+'" r="'+r2(hr*1.2)+'" fill="#f2b84b" stroke="#1b1b1b" stroke-width="1.5" vector-effect="non-scaling-stroke"/></g>';
+    out+='</g>';
+  }
+  if(drag&&drag.guides){
+    drag.guides.v.forEach(function(x){out+='<line x1="'+r2(x)+'" y1="0" x2="'+r2(x)+'" y2="'+doc.h+'" stroke="#4cc2ff" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke" pointer-events="none"/>'});
+    drag.guides.h.forEach(function(y){out+='<line x1="0" y1="'+r2(y)+'" x2="'+doc.w+'" y2="'+r2(y)+'" stroke="#4cc2ff" stroke-width="1.5" stroke-dasharray="6 4" vector-effect="non-scaling-stroke" pointer-events="none"/>'});
+  }
   return out;
 }
+var HANDLES=[['nw',0,0,'nwse-resize'],['n',.5,0,'ns-resize'],['ne',1,0,'nesw-resize'],['e',1,.5,'ew-resize'],['se',1,1,'nwse-resize'],['s',.5,1,'ns-resize'],['sw',0,1,'nesw-resize'],['w',0,.5,'ew-resize']];
 function render(){
   layers.forEach(ensureFont);
   svg.setAttribute('viewBox','0 0 '+doc.w+' '+doc.h);
@@ -345,7 +369,61 @@ function fit(){
   svg.setAttribute('width',Math.max(1,Math.round(doc.w*k)));
   svg.setAttribute('height',Math.max(1,Math.round(doc.h*k)));
 }
-window.addEventListener('resize',fit);
+window.addEventListener('resize',function(){render()});
+
+/* ---------- guías magnéticas ---------- */
+function aabb(L,g){
+  var r=(L.rot||0)*Math.PI/180, hw=g.w/2, hh=g.h/2;
+  return {cx:L.x+hw, cy:L.y+hh,
+    bw:hw*Math.abs(Math.cos(r))+hh*Math.abs(Math.sin(r)),
+    bh:hw*Math.abs(Math.sin(r))+hh*Math.abs(Math.cos(r))};
+}
+function snapMove(L,g){
+  var kz=(svg.getBoundingClientRect().width/doc.w)||1, thr=7/kz;
+  var b=aabb(L,g), tx=[0,doc.w/2,doc.w], ty=[0,doc.h/2,doc.h];
+  layers.forEach(function(O){
+    if(O===L||!O.visible)return;var fo=fontFor(O);if(!fo)return;
+    var c=aabb(O,geomOf(O,fo));
+    tx.push(c.cx-c.bw,c.cx,c.cx+c.bw);ty.push(c.cy-c.bh,c.cy,c.cy+c.bh);
+  });
+  function best(mine,targets){
+    var bd=thr+1, bt=null, bm=0;
+    mine.forEach(function(m){targets.forEach(function(t){var d=Math.abs(t-m);if(d<bd){bd=d;bt=t;bm=t-m}})});
+    return bt===null?null:{shift:bm,at:bt};
+  }
+  var sx=best([b.cx-b.bw,b.cx,b.cx+b.bw],tx), sy=best([b.cy-b.bh,b.cy,b.cy+b.bh],ty), gd={v:[],h:[]};
+  if(sx){L.x+=sx.shift;gd.v.push(sx.at)}
+  if(sy){L.y+=sy.shift;gd.h.push(sy.at)}
+  return gd;
+}
+
+/* ---------- deshacer / rehacer ---------- */
+var undoS=[], redoS=[], markT=null;
+function stateStr(){return JSON.stringify({doc:doc,layers:layers,sel:selId})}
+function updHist(){$('undo').disabled=!undoS.length;$('redo').disabled=!redoS.length}
+function pushUndo(){
+  var s=stateStr();
+  if(undoS.length&&undoS[undoS.length-1]===s)return;
+  undoS.push(s);if(undoS.length>80)undoS.shift();
+  redoS=[];updHist();
+}
+function mark(){
+  if(markT===null)pushUndo();
+  clearTimeout(markT);markT=setTimeout(function(){markT=null},700);
+}
+function applyState(s){
+  var o=JSON.parse(s);doc=o.doc;layers=o.layers;selId=o.sel;
+  if(!sel())selId=layers[0].id;
+  clearTimeout(markT);markT=null;
+  syncDoc();renderListLayers();renderList();syncPanel();render();updHist();
+}
+function undo(){if(!undoS.length)return;redoS.push(stateStr());applyState(undoS.pop())}
+function redo(){if(!redoS.length)return;undoS.push(stateStr());applyState(redoS.pop())}
+document.addEventListener('keydown',function(e){
+  if(!(e.metaKey||e.ctrlKey)||String(e.key).toLowerCase()!=='z')return;
+  var t=e.target&&e.target.tagName;if(t==='TEXTAREA'||t==='INPUT'||t==='SELECT')return;
+  e.preventDefault();if(e.shiftKey)redo();else undo();
+});
 
 /* ---------- arrastrar en el lienzo ---------- */
 function toSvg(e){
@@ -353,6 +431,19 @@ function toSvg(e){
   return p.matrixTransform(svg.getScreenCTM().inverse());
 }
 svg.addEventListener('pointerdown',function(e){
+  var hh=e.target.closest&&e.target.closest('[data-h]');
+  if(hh){
+    var L0=sel(), f0=L0&&fontFor(L0);if(!f0)return;
+    var g0=geomOf(L0,f0), nm=hh.getAttribute('data-h');
+    if(nm==='rot'){
+      drag={type:'rot',id:L0.id,cxw:L0.x+g0.w/2,cyw:L0.y+g0.h/2};
+      svg.setPointerCapture(e.pointerId);e.preventDefault();return;
+    }
+    var H=HANDLES.filter(function(h){return h[0]===nm})[0];
+    drag={type:'size',id:L0.id,H:H,x0:L0.x,y0:L0.y,s0:L0.size,w:g0.w,h:g0.h,rot:L0.rot||0};
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();return;
+  }
   var t=e.target.closest&&e.target.closest('[data-hit]');
   if(!t)return;
   var id=t.getAttribute('data-hit'), L=layers.filter(function(l){return l.id===id})[0];
@@ -369,14 +460,36 @@ svg.addEventListener('pointermove',function(e){
   if(!drag)return;
   var L=layers.filter(function(l){return l.id===drag.id})[0];if(!L)return;
   var p=toSvg(e);
-  L.x=drag.ox+(p.x-drag.sx);L.y=drag.oy+(p.y-drag.sy);drag.moved=true;
+  if(!drag.moved){pushUndo();drag.moved=true}
+  if(drag.type==='rot'){
+    var an=Math.atan2(p.y-drag.cyw,p.x-drag.cxw)*180/Math.PI+90;
+    an=((an%360)+540)%360-180;
+    var sn=Math.round(an/15)*15;if(Math.abs(an-sn)<4)an=sn;
+    L.rot=r2(an);$('rot').value=L.rot;$('rotR').value=L.rot;
+    render();return;
+  }
+  if(drag.type==='size'){
+    var d=drag, ang=d.rot*Math.PI/180, cx=d.w/2, cy=d.h/2;
+    var dx=p.x-d.x0-cx, dy=p.y-d.y0-cy;
+    var q={x:cx+dx*Math.cos(-ang)-dy*Math.sin(-ang), y:cy+dx*Math.sin(-ang)+dy*Math.cos(-ang)};
+    var A={x:(1-d.H[1])*d.w, y:(1-d.H[2])*d.h}, Hp={x:d.H[1]*d.w, y:d.H[2]*d.h};
+    var ux=Hp.x-A.x, uy=Hp.y-A.y, uu=ux*ux+uy*uy;if(!uu)return;
+    var kk=((q.x-A.x)*ux+(q.y-A.y)*uy)/uu;
+    var ns=Math.max(1,Math.min(5000,Math.round(d.s0*kk*2)/2)), k2=ns/d.s0;
+    var ax=A.x-cx, ay=A.y-cy;
+    var rx=ax*Math.cos(ang)-ay*Math.sin(ang), ry=ax*Math.sin(ang)+ay*Math.cos(ang);
+    L.size=ns; L.x=d.x0+(1-k2)*(cx+rx); L.y=d.y0+(1-k2)*(cy+ry);
+    $('size').value=r2(L.size);$('sizeR').value=L.size;$('px').value=r2(L.x);$('py').value=r2(L.y);
+    render();
+    return;
+  }
+  L.x=drag.ox+(p.x-drag.sx);L.y=drag.oy+(p.y-drag.sy);
   var f=fontFor(L), g=f&&geomOf(L,f);if(!g)return;
-  var a=svg.querySelector('[data-id="'+L.id+'"]'), b=svg.querySelector('[data-hit="'+L.id+'"]');
-  if(a)a.setAttribute('transform',tf(L,g));
-  if(b)b.setAttribute('transform',tf(L,g));
+  drag.guides=snapMove(L,g);
   $('px').value=r2(L.x);$('py').value=r2(L.y);
+  render();
 });
-function endDrag(){if(drag){drag=null;scheduleSave()}}
+function endDrag(){if(drag){var had=drag.guides;drag=null;scheduleSave();if(had)render()}}
 svg.addEventListener('pointerup',endDrag);
 svg.addEventListener('pointercancel',endDrag);
 
@@ -464,7 +577,7 @@ function loadCatalog(){
 }
 
 /* ---------- eventos ---------- */
-function onSel(fn){return function(e){var L=sel();if(!L)return;fn(L,e);}}
+function onSel(fn){return function(e){var L=sel();if(!L)return;mark();fn(L,e);}}
 $('txt').addEventListener('input',onSel(function(L,e){L.text=e.target.value;renderListLayers();render()}));
 $('al').addEventListener('change',onSel(function(L,e){L.align=e.target.value;render()}));
 $('col').addEventListener('input',onSel(function(L,e){L.color=e.target.value;render()}));
@@ -487,6 +600,7 @@ $('q').addEventListener('input',renderList);
 $('cat').addEventListener('change',renderList);
 
 $('addL').onclick=function(){
+  mark();
   var cur=sel(), n=layers.length;
   var L=newLayer({text:'Nueva capa',x:60+n*30,y:60+n*40,
     font:cur?{id:cur.font.id,own:cur.font.own,weight:cur.font.weight,italic:cur.font.italic}:undefined,
@@ -511,11 +625,12 @@ $('cH').onclick=onSel(function(L){var f=fontFor(L);if(!f)return;L.x=doc.w/2-geom
 $('cV').onclick=onSel(function(L){var f=fontFor(L);if(!f)return;L.y=doc.h/2-geomOf(L,f).h/2;syncPanel();render()});
 
 function syncDoc(){$('cw').value=r2(doc.w);$('ch').value=r2(doc.h);$('bg').value=doc.bg;$('tr').checked=doc.transparent}
-$('cw').addEventListener('input',function(e){var v=parseFloat(e.target.value);if(v>=1){doc.w=v;render()}});
-$('ch').addEventListener('input',function(e){var v=parseFloat(e.target.value);if(v>=1){doc.h=v;render()}});
-$('bg').addEventListener('input',function(e){doc.bg=e.target.value;doc.transparent=false;$('tr').checked=false;render()});
-$('tr').addEventListener('change',function(e){doc.transparent=e.target.checked;render()});
+$('cw').addEventListener('input',function(e){mark();var v=parseFloat(e.target.value);if(v>=1){doc.w=v;render()}});
+$('ch').addEventListener('input',function(e){mark();var v=parseFloat(e.target.value);if(v>=1){doc.h=v;render()}});
+$('bg').addEventListener('input',function(e){mark();doc.bg=e.target.value;doc.transparent=false;$('tr').checked=false;render()});
+$('tr').addEventListener('change',function(e){mark();doc.transparent=e.target.checked;render()});
 $('fit').onclick=function(){
+  mark();
   var x0=1e9,y0=1e9,x1=-1e9,y1=-1e9,any=false;
   layers.forEach(function(L){
     if(!L.visible)return;var f=fontFor(L);if(!f)return;
@@ -531,6 +646,7 @@ $('fit').onclick=function(){
 };
 $('newDoc').onclick=function(){
   if(!confirm('¿Borrar toda la composición y empezar de nuevo?'))return;
+  mark();
   try{localStorage.removeItem('fontcraft-doc')}catch(e){}
   initDoc();
 };
@@ -544,6 +660,69 @@ function save(blob,name){
   document.body.appendChild(a);a.click();a.remove();
   setTimeout(function(){URL.revokeObjectURL(a.href)},4000);
 }
+/* PDF vectorial sin librerías: el texto va como curvas (cada capa con su giro, color y opacidad) */
+function pdfPathOps(d){
+  var tok=d.match(/[a-zA-Z]|-?\d*\.?\d+(?:e[-+]?\d+)?/g)||[], i=0, out=[];
+  var cx=0,cy=0,sx=0,sy=0,lcx=0,lcy=0,lqx=0,lqy=0,cmd='',prev='';
+  function n(){return parseFloat(tok[i++])}
+  function f(v){return String(Math.round(v*1000)/1000)}
+  function cub(x1,y1,x2,y2,x,y){out.push(f(x1)+' '+f(y1)+' '+f(x2)+' '+f(y2)+' '+f(x)+' '+f(y)+' c');lcx=x2;lcy=y2;cx=x;cy=y}
+  while(i<tok.length){
+    if(/[a-zA-Z]/.test(tok[i]))cmd=tok[i++];
+    var rel=cmd===cmd.toLowerCase(), C=cmd.toUpperCase(), ox=rel?cx:0, oy=rel?cy:0, x,y,x1,y1,x2,y2;
+    if(C==='Z'){out.push('h');cx=sx;cy=sy;prev='Z';continue}
+    if(C==='M'){x=n()+ox;y=n()+oy;out.push(f(x)+' '+f(y)+' m');cx=sx=x;cy=sy=y;cmd=rel?'l':'L';prev='M'}
+    else if(C==='L'){x=n()+ox;y=n()+oy;out.push(f(x)+' '+f(y)+' l');cx=x;cy=y;prev='L'}
+    else if(C==='H'){x=n()+ox;out.push(f(x)+' '+f(cy)+' l');cx=x;prev='L'}
+    else if(C==='V'){y=n()+oy;out.push(f(cx)+' '+f(y)+' l');cy=y;prev='L'}
+    else if(C==='C'){x1=n()+ox;y1=n()+oy;x2=n()+ox;y2=n()+oy;x=n()+ox;y=n()+oy;cub(x1,y1,x2,y2,x,y);prev='C'}
+    else if(C==='S'){x1=(prev==='C')?2*cx-lcx:cx;y1=(prev==='C')?2*cy-lcy:cy;x2=n()+ox;y2=n()+oy;x=n()+ox;y=n()+oy;cub(x1,y1,x2,y2,x,y);prev='C'}
+    else if(C==='Q'||C==='T'){
+      if(C==='Q'){x1=n()+ox;y1=n()+oy}else{x1=(prev==='Q')?2*cx-lqx:cx;y1=(prev==='Q')?2*cy-lqy:cy}
+      x=n()+ox;y=n()+oy;
+      cub(cx+2/3*(x1-cx),cy+2/3*(y1-cy),x+2/3*(x1-x),y+2/3*(y1-y),x,y);lqx=x1;lqy=y1;prev='Q';
+    }
+    else{i++}
+  }
+  return out.join('\n');
+}
+function exportPdf(){
+  var W=doc.w,H=doc.h,ops=[],gs=[],gi={};
+  function f3(v){return String(Math.round(v*1000)/1000)}
+  function f6(v){return String(Math.round(v*1000000)/1000000)}
+  function rgb(h){h=String(h).replace('#','');if(h.length===3)h=h.split('').map(function(c){return c+c}).join('');var m=parseInt(h,16)||0;return [(m>>16&255)/255,(m>>8&255)/255,(m&255)/255].map(f3).join(' ')}
+  ops.push('1 0 0 -1 0 '+f3(H)+' cm');
+  if(!doc.transparent)ops.push('q '+rgb(doc.bg)+' rg 0 0 '+f3(W)+' '+f3(H)+' re f Q');
+  layers.forEach(function(L){
+    if(!L.visible)return;var fnt=fontFor(L);if(!fnt)return;
+    var g=geomOf(L,fnt), a=(L.rot||0)*Math.PI/180, c=Math.cos(a), sn=Math.sin(a), hw=g.w/2, hh=g.h/2, q=['q'];
+    if(L.opacity<100){var k=r2(L.opacity/100);if(!(k in gi)){gi[k]=gs.length;gs.push(k)}q.push('/G'+gi[k]+' gs')}
+    q.push('1 0 0 1 '+f3(L.x+hw)+' '+f3(L.y+hh)+' cm');
+    q.push([c,sn,-sn,c,0,0].map(f6).join(' ')+' cm');
+    q.push('1 0 0 1 '+f3(-hw)+' '+f3(-hh)+' cm');
+    q.push(rgb(L.color)+' rg');
+    q.push(pdfPathOps(g.d));q.push('f Q');
+    ops.push(q.join('\n'));
+  });
+  var content=ops.join('\n'), objs=[];
+  objs[1]='<< /Type /Catalog /Pages 2 0 R >>';
+  objs[2]='<< /Type /Pages /Kids [3 0 R] /Count 1 >>';
+  objs[3]='<< /Type /Page /Parent 2 0 R /MediaBox [0 0 '+f3(W)+' '+f3(H)+'] /Contents 4 0 R /Resources << '+
+    (gs.length?'/ExtGState << '+gs.map(function(k,i){return '/G'+i+' '+(5+i)+' 0 R'}).join(' ')+' >>':'')+' >> >>';
+  objs[4]='<< /Length '+content.length+' >>\nstream\n'+content+'\nendstream';
+  gs.forEach(function(k,i){objs[5+i]='<< /Type /ExtGState /ca '+k+' /CA '+k+' >>'});
+  var pdf='%PDF-1.4\n', offs=[], j;
+  for(j=1;j<objs.length;j++){offs[j]=pdf.length;pdf+=j+' 0 obj\n'+objs[j]+'\nendobj\n'}
+  var xr=pdf.length;
+  pdf+='xref\n0 '+objs.length+'\n0000000000 65535 f \n';
+  for(j=1;j<objs.length;j++)pdf+=('0000000000'+offs[j]).slice(-10)+' 00000 n \n';
+  pdf+='trailer\n<< /Size '+objs.length+' /Root 1 0 R >>\nstartxref\n'+xr+'\n%%EOF';
+  return pdf;
+}
+$('dlPdf').onclick=function(){
+  if(!anyReady()){status('Aún no hay texto listo para exportar.',true);return}
+  save(new Blob([exportPdf()],{type:'application/pdf'}),'composicion-fontcraft.pdf');
+};
 function anyReady(){return layers.some(function(L){return L.visible&&fontFor(L)})}
 $('dlSvg').onclick=function(){
   if(!anyReady()){status('Aún no hay texto listo para exportar.',true);return}
@@ -633,6 +812,7 @@ dbAll().then(function(rows){
   loadCatalog();
   loadRepoFonts();
 });
+$('undo').onclick=undo;$('redo').onclick=redo;updHist();
 window.__fc={doc:function(){return doc},layers:function(){return layers},exportSvg:exportSvg};
 })();
 </script>
